@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     chunk_size: int = 512
     chunk_overlap: int = 50
     top_k_retrieval: int = 5
-    similarity_threshold: float = 0.7
+    similarity_threshold: float = 0.3
 
     # Application Settings
     log_level: str = "INFO"
