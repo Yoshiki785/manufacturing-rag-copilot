@@ -31,40 +31,48 @@ def chunk_document(
 
     Returns:
         List of ChunkResult objects containing chunk data.
-
-    Note:
-        Uses sentence-aware splitting to avoid breaking mid-sentence
-        when possible. Falls back to character splitting for very long
-        sentences.
     """
     chunk_size = chunk_size or settings.chunk_size
     chunk_overlap = chunk_overlap or settings.chunk_overlap
 
-    # TODO: Implement sentence-aware chunking
-    # - Split on sentence boundaries (., !, ?)
-    # - Respect chunk_size limits
-    # - Apply overlap between chunks
-    # - Handle edge cases (code blocks, tables, lists)
+    if not content or not content.strip():
+        return []
 
-    raise NotImplementedError("Chunking not yet implemented")
+    chunks: list[ChunkResult] = []
+    start = 0
+    chunk_index = 0
 
+    while start < len(content):
+        end = min(start + chunk_size, len(content))
 
-def chunk_for_manufacturing(content: str) -> list[ChunkResult]:
-    """
-    Chunk content with manufacturing-domain optimizations.
+        # Try to break at sentence boundary if not at end
+        if end < len(content):
+            # Look for sentence endings within the last 20% of the chunk
+            search_start = start + int(chunk_size * 0.8)
+            best_break = -1
+            for sep in ['. ', '! ', '? ', '.\n', '!\n', '?\n']:
+                pos = content.rfind(sep, search_start, end)
+                if pos > best_break:
+                    best_break = pos + len(sep)
 
-    Args:
-        content: Manufacturing document text (specs, procedures, etc.)
+            if best_break > search_start:
+                end = best_break
 
-    Returns:
-        List of ChunkResult objects optimized for manufacturing content.
+        chunk_content = content[start:end].strip()
 
-    Note:
-        Preserves structure of:
-        - Part numbers and specifications
-        - Step-by-step procedures
-        - Safety warnings and notes
-        - Technical tables and lists
-    """
-    # TODO: Implement manufacturing-specific chunking
-    raise NotImplementedError("Manufacturing chunking not yet implemented")
+        if chunk_content:
+            chunks.append(
+                ChunkResult(
+                    content=chunk_content,
+                    chunk_index=chunk_index,
+                    start_char=start,
+                    end_char=end,
+                    metadata={},
+                )
+            )
+            chunk_index += 1
+
+        # Move start position with overlap
+        start = end - chunk_overlap if end < len(content) else len(content)
+
+    return chunks
