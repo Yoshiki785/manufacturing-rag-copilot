@@ -14,7 +14,6 @@ class Base(DeclarativeBase):
     """Base class for all models."""
 
 
-
 class Document(Base):
     """Document model representing source documents."""
 
