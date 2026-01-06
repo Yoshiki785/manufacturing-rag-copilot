@@ -5,14 +5,14 @@ from uuid import UUID
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
-from sqlalchemy.dialects.postgresql import INET, JSONB, UUID as PGUUID
+from sqlalchemy.dialects.postgresql import INET, JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
     """Base class for all models."""
 
-    pass
 
 
 class Document(Base):

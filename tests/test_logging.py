@@ -3,7 +3,6 @@
 import logging
 from unittest.mock import MagicMock, patch
 
-
 from src.app.core.logging import get_logger, log_event, setup_logging
 
 

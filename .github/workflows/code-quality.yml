@@ -30,7 +30,7 @@ jobs:
 
     - name: Check for common issues
       run: |
-        ruff check src/ tests/ --select I,N,UP,S,B,A,C4,PIE,T20,SIM
+        ruff check src/ tests/
 
   security:
     runs-on: ubuntu-latest
