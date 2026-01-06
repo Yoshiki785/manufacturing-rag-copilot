@@ -49,7 +49,7 @@ async def ingest_document(
         content=content,
         source_type=source_type,
         source_path=source_path,
-        metadata=metadata,
+        meta=metadata,
     )
     session.add(document)
 
@@ -65,7 +65,7 @@ async def ingest_document(
             chunk_index=chunk_data.chunk_index,
             start_char=chunk_data.start_char,
             end_char=chunk_data.end_char,
-            metadata=chunk_data.metadata,
+            meta=chunk_data.metadata,
         )
         session.add(chunk)
 

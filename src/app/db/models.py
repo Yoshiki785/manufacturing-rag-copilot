@@ -25,7 +25,7 @@ class Document(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     source_type: Mapped[str | None] = mapped_column(String(100))
     source_path: Mapped[str | None] = mapped_column(String(1000))
-    metadata: Mapped[dict] = mapped_column(JSONB, default=dict)
+    meta: Mapped[dict] = mapped_column(JSONB, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
@@ -43,7 +43,7 @@ class Chunk(Base):
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     start_char: Mapped[int | None] = mapped_column(Integer)
     end_char: Mapped[int | None] = mapped_column(Integer)
-    metadata: Mapped[dict] = mapped_column(JSONB, default=dict)
+    meta: Mapped[dict] = mapped_column(JSONB, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     document: Mapped["Document"] = relationship(back_populates="chunks")
@@ -72,7 +72,7 @@ class Thread(Base):
     id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
     title: Mapped[str | None] = mapped_column(String(500))
     user_id: Mapped[str | None] = mapped_column(String(255))
-    metadata: Mapped[dict] = mapped_column(JSONB, default=dict)
+    meta: Mapped[dict] = mapped_column(JSONB, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
@@ -90,7 +90,7 @@ class Message(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     citations: Mapped[list] = mapped_column(JSONB, default=list)
     token_count: Mapped[int | None] = mapped_column(Integer)
-    metadata: Mapped[dict] = mapped_column(JSONB, default=dict)
+    meta: Mapped[dict] = mapped_column(JSONB, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     thread: Mapped["Thread"] = relationship(back_populates="messages")

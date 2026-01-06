@@ -1,8 +1,9 @@
 """Response generation for RAG pipeline."""
 
+import re
 from dataclasses import dataclass
 
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, OpenAIError
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.app.core.config import settings
@@ -71,12 +72,52 @@ async def generate_response(
         "content": f"Context:\n{context_text}\n\nQuestion: {query}",
     })
 
-    # TODO: Complete implementation
-    # - Call OpenAI chat completion
-    # - Extract citations from response
-    # - Track token usage
+    try:
+        logger.info(f"Generating response for query: {query[:50]}...")
 
-    raise NotImplementedError("Generation not yet implemented")
+        response = await client.chat.completions.create(
+            model=settings.openai_chat_model,
+            messages=messages,
+            temperature=0.3,
+            max_tokens=1500,
+        )
+
+        answer = response.choices[0].message.content or ""
+
+        # Extract [Source N] citations from the response
+        citation_pattern = r"\[Source\s+(\d+)\]"
+        source_numbers = set(int(m) for m in re.findall(citation_pattern, answer))
+
+        # Build citation list with chunk info
+        citations = []
+        for source_num in sorted(source_numbers):
+            idx = source_num - 1  # Convert 1-based to 0-based index
+            if 0 <= idx < len(context_chunks):
+                chunk = context_chunks[idx]
+                citations.append({
+                    "source": source_num,
+                    "chunk_id": str(chunk.chunk_id),
+                    "content": chunk.content[:200] + "..." if len(chunk.content) > 200 else chunk.content,
+                })
+
+        # Track token usage
+        token_usage = {
+            "prompt_tokens": response.usage.prompt_tokens if response.usage else 0,
+            "completion_tokens": response.usage.completion_tokens if response.usage else 0,
+            "total_tokens": response.usage.total_tokens if response.usage else 0,
+        }
+
+        logger.info(f"Generated response with {len(citations)} citations, {token_usage['total_tokens']} tokens")
+
+        return GenerationResult(
+            answer=answer,
+            citations=citations,
+            token_usage=token_usage,
+        )
+
+    except OpenAIError as e:
+        logger.error(f"OpenAI API error during generation: {e}")
+        raise
 
 
 def _format_context(chunks: list[RetrievalResult]) -> str:

@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS documents (
     content TEXT NOT NULL,
     source_type VARCHAR(100),
     source_path VARCHAR(1000),
-    metadata JSONB DEFAULT '{}',
+    meta JSONB DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS chunks (
     chunk_index INTEGER NOT NULL,
     start_char INTEGER,
     end_char INTEGER,
-    metadata JSONB DEFAULT '{}',
+    meta JSONB DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS threads (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(500),
     user_id VARCHAR(255),
-    metadata JSONB DEFAULT '{}',
+    meta JSONB DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS messages (
     content TEXT NOT NULL,
     citations JSONB DEFAULT '[]',
     token_count INTEGER,
-    metadata JSONB DEFAULT '{}',
+    meta JSONB DEFAULT '{}',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

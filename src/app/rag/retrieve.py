@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from uuid import UUID
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.core.config import settings
@@ -47,13 +48,55 @@ async def retrieve_similar_chunks(
     top_k = top_k or settings.top_k_retrieval
     similarity_threshold = similarity_threshold or settings.similarity_threshold
 
-    # TODO: Implement vector similarity search
-    # - Use pgvector cosine distance operator (<=>)
-    # - Join with chunks and documents tables
-    # - Apply similarity threshold filter
-    # - Return top_k results
+    logger.info(f"Retrieving similar chunks: top_k={top_k}, threshold={similarity_threshold}")
 
-    raise NotImplementedError("Retrieval not yet implemented")
+    # Build SQL query using pgvector cosine distance operator (<=>)
+    # Cosine distance ranges from 0 (identical) to 2 (opposite)
+    # Similarity = 1 - distance (ranges from -1 to 1)
+    query = text("""
+        SELECT
+            c.id AS chunk_id,
+            c.document_id,
+            c.content,
+            c.meta,
+            1 - (e.embedding <=> :query_embedding) AS similarity_score
+        FROM embeddings e
+        JOIN chunks c ON e.chunk_id = c.id
+        JOIN documents d ON c.document_id = d.id
+        WHERE 1 - (e.embedding <=> :query_embedding) >= :threshold
+        ORDER BY similarity_score DESC
+        LIMIT :limit
+    """)
+
+    try:
+        result = await session.execute(
+            query,
+            {
+                "query_embedding": str(query_embedding),
+                "threshold": similarity_threshold,
+                "limit": top_k,
+            },
+        )
+        rows = result.fetchall()
+
+        retrieval_results = []
+        for row in rows:
+            retrieval_results.append(
+                RetrievalResult(
+                    chunk_id=row.chunk_id,
+                    document_id=row.document_id,
+                    content=row.content,
+                    similarity_score=float(row.similarity_score),
+                    metadata=row.meta or {},
+                )
+            )
+
+        logger.info(f"Retrieved {len(retrieval_results)} chunks")
+        return retrieval_results
+
+    except Exception as e:
+        logger.error(f"Error during retrieval: {e}")
+        raise
 
 
 async def retrieve_with_reranking(
