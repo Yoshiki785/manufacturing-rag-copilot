@@ -47,7 +47,9 @@ class Chunk(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
 
     document: Mapped["Document"] = relationship(back_populates="chunks")
-    embeddings: Mapped[list["Embedding"]] = relationship(back_populates="chunk", cascade="all, delete")
+    embeddings: Mapped[list["Embedding"]] = relationship(
+        back_populates="chunk", cascade="all, delete"
+    )
 
 
 class Embedding(Base):

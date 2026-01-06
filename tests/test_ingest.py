@@ -1,6 +1,6 @@
 """Tests for document ingestion functionality."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from sqlalchemy import select
@@ -52,9 +52,7 @@ async def test_ingest_document_creates_chunks(session):
         )
 
         # Verify chunks were created
-        result = await session.execute(
-            select(Chunk).where(Chunk.document_id == document_id)
-        )
+        result = await session.execute(select(Chunk).where(Chunk.document_id == document_id))
         chunks = result.scalars().all()
         assert len(chunks) > 0
 
@@ -79,9 +77,7 @@ async def test_ingest_document_creates_embeddings(session):
         )
 
         # Get chunks
-        result = await session.execute(
-            select(Chunk).where(Chunk.document_id == document_id)
-        )
+        result = await session.execute(select(Chunk).where(Chunk.document_id == document_id))
         chunks = result.scalars().all()
 
         # Verify embeddings were created for each chunk
@@ -154,9 +150,7 @@ async def test_ingest_document_long_content(session):
         )
 
         # Verify multiple chunks were created
-        result = await session.execute(
-            select(Chunk).where(Chunk.document_id == document_id)
-        )
+        result = await session.execute(select(Chunk).where(Chunk.document_id == document_id))
         chunks = result.scalars().all()
         assert len(chunks) > 1
 
@@ -175,9 +169,7 @@ async def test_ingest_document_chunk_order(session):
         )
 
         result = await session.execute(
-            select(Chunk)
-            .where(Chunk.document_id == document_id)
-            .order_by(Chunk.chunk_index)
+            select(Chunk).where(Chunk.document_id == document_id).order_by(Chunk.chunk_index)
         )
         chunks = result.scalars().all()
 

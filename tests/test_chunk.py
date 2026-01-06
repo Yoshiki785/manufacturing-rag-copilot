@@ -1,13 +1,13 @@
 """Tests for document chunking functionality."""
 
-import pytest
-
 from src.app.rag.chunk import chunk_document
 
 
 def test_chunk_document_normal():
     """Test normal document chunking."""
-    content = "This is sentence one. This is sentence two. This is sentence three. This is sentence four."
+    content = (
+        "This is sentence one. This is sentence two. This is sentence three. This is sentence four."
+    )
     chunks = chunk_document(content, chunk_size=50, chunk_overlap=10)
 
     assert len(chunks) > 0
@@ -49,10 +49,7 @@ def test_chunk_document_sentence_boundary():
 
     # Check that chunks tend to end at sentence boundaries
     # At least some chunks should end with punctuation
-    ends_with_punctuation = [
-        chunk.content.rstrip().endswith((".", "!", "?"))
-        for chunk in chunks
-    ]
+    ends_with_punctuation = [chunk.content.rstrip().endswith((".", "!", "?")) for chunk in chunks]
     assert any(ends_with_punctuation)
 
 
@@ -74,7 +71,7 @@ def test_chunk_document_positions_valid():
         assert 0 <= chunk.start_char < len(content)
         assert chunk.start_char < chunk.end_char <= len(content)
         # Verify the content matches the positions
-        expected_content = content[chunk.start_char:chunk.end_char].strip()
+        expected_content = content[chunk.start_char : chunk.end_char].strip()
         assert chunk.content == expected_content
 
 
@@ -88,7 +85,9 @@ def test_chunk_document_custom_sizes():
 
     for chunk in chunks:
         # Each chunk should be roughly chunk_size or less
-        assert len(chunk.content) <= chunk_size + 50  # Allow some flexibility for sentence boundaries
+        assert (
+            len(chunk.content) <= chunk_size + 50
+        )  # Allow some flexibility for sentence boundaries
 
 
 def test_chunk_document_metadata_exists():

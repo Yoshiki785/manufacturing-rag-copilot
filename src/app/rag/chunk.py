@@ -50,7 +50,7 @@ def chunk_document(
             # Look for sentence endings within the last 20% of the chunk
             search_start = start + int(chunk_size * 0.8)
             best_break = -1
-            for sep in ['. ', '! ', '? ', '.\n', '!\n', '?\n']:
+            for sep in [". ", "! ", "? ", ".\n", "!\n", "?\n"]:
                 pos = content.rfind(sep, search_start, end)
                 if pos > best_break:
                     best_break = pos + len(sep)

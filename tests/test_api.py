@@ -5,7 +5,7 @@ from uuid import uuid4
 
 import pytest
 
-from src.app.db.models import Document, Thread
+from src.app.db.models import Thread
 
 
 @pytest.mark.asyncio

@@ -32,7 +32,9 @@ async def test_generate_response_success():
     mock_client = MagicMock()
     mock_response = MagicMock()
     mock_response.choices = [MagicMock()]
-    mock_response.choices[0].message.content = "The torque is 45 Nm [Source 1]. Use a cross pattern [Source 2]."
+    mock_response.choices[
+        0
+    ].message.content = "The torque is 45 Nm [Source 1]. Use a cross pattern [Source 2]."
     mock_response.usage = MagicMock()
     mock_response.usage.prompt_tokens = 100
     mock_response.usage.completion_tokens = 50

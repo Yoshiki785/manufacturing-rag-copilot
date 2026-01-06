@@ -152,11 +152,7 @@ async def get_thread(
 ) -> dict:
     """Get a specific conversation thread."""
     thread_uuid = UUID(thread_id)
-    stmt = (
-        select(Thread)
-        .where(Thread.id == thread_uuid)
-        .options(selectinload(Thread.messages))
-    )
+    stmt = select(Thread).where(Thread.id == thread_uuid).options(selectinload(Thread.messages))
     result = await session.execute(stmt)
     thread = result.scalar_one_or_none()
 

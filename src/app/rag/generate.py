@@ -67,10 +67,12 @@ async def generate_response(
     if conversation_history:
         messages.extend(conversation_history)
 
-    messages.append({
-        "role": "user",
-        "content": f"Context:\n{context_text}\n\nQuestion: {query}",
-    })
+    messages.append(
+        {
+            "role": "user",
+            "content": f"Context:\n{context_text}\n\nQuestion: {query}",
+        }
+    )
 
     try:
         logger.info(f"Generating response for query: {query[:50]}...")
@@ -94,11 +96,15 @@ async def generate_response(
             idx = source_num - 1  # Convert 1-based to 0-based index
             if 0 <= idx < len(context_chunks):
                 chunk = context_chunks[idx]
-                citations.append({
-                    "source": source_num,
-                    "chunk_id": str(chunk.chunk_id),
-                    "content": chunk.content[:200] + "..." if len(chunk.content) > 200 else chunk.content,
-                })
+                citations.append(
+                    {
+                        "source": source_num,
+                        "chunk_id": str(chunk.chunk_id),
+                        "content": chunk.content[:200] + "..."
+                        if len(chunk.content) > 200
+                        else chunk.content,
+                    }
+                )
 
         # Track token usage
         token_usage = {
@@ -107,7 +113,9 @@ async def generate_response(
             "total_tokens": response.usage.total_tokens if response.usage else 0,
         }
 
-        logger.info(f"Generated response with {len(citations)} citations, {token_usage['total_tokens']} tokens")
+        logger.info(
+            f"Generated response with {len(citations)} citations, {token_usage['total_tokens']} tokens"
+        )
 
         return GenerationResult(
             answer=answer,

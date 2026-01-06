@@ -4,7 +4,7 @@ from uuid import uuid4
 
 import pytest
 
-from src.app.db.models import Chunk, Document, Embedding
+from src.app.db.models import Chunk, Document
 from src.app.rag.retrieve import retrieve_similar_chunks
 
 
