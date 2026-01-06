@@ -1,5 +1,11 @@
 # Manufacturing RAG Copilot
 
+[![CI](https://github.com/Yoshiki785/manufacturing-rag-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/Yoshiki785/manufacturing-rag-copilot/actions/workflows/ci.yml)
+[![Code Quality](https://github.com/Yoshiki785/manufacturing-rag-copilot/actions/workflows/code-quality.yml/badge.svg)](https://github.com/Yoshiki785/manufacturing-rag-copilot/actions/workflows/code-quality.yml)
+[![codecov](https://codecov.io/gh/Yoshiki785/manufacturing-rag-copilot/branch/main/graph/badge.svg)](https://codecov.io/gh/Yoshiki785/manufacturing-rag-copilot)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 An AI-powered Retrieval-Augmented Generation (RAG) system designed for manufacturing domain knowledge assistance.
 
 ## Why
