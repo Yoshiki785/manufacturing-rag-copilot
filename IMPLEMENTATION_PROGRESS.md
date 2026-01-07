@@ -103,7 +103,7 @@
 
 **依存関係:** `pip install prometheus-fastapi-instrumentator`
 
-**最終コミット:** 未コミット
+**最終コミット:** afd7bbe
 
 ---
 
