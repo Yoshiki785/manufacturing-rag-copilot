@@ -1,11 +1,17 @@
 """Document ingestion pipeline for RAG system."""
 
+import time
 from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.core.exceptions import IngestError
 from src.app.core.logging import get_logger
+from src.app.core.metrics import (
+    chunks_created_total,
+    document_ingestion_duration_seconds,
+    documents_ingested_total,
+)
 from src.app.db.models import Chunk, Document, Embedding
 from src.app.rag.chunk import chunk_document
 from src.app.rag.embed import generate_embedding, generate_embeddings_batch
@@ -44,6 +50,8 @@ async def ingest_document(
         3. Generate embeddings for each chunk
         4. Store chunks and embeddings in database
     """
+    start_time = time.time()
+
     try:
         metadata = metadata or {}
 
@@ -85,12 +93,22 @@ async def ingest_document(
             session.add(embedding)
 
         await session.commit()
-        logger.info(f"Ingested document {document.id} with {len(chunks)} chunks")
+
+        # Record metrics
+        duration = time.time() - start_time
+        document_ingestion_duration_seconds.observe(duration)
+        documents_ingested_total.labels(status="success").inc()
+        chunks_created_total.inc(len(chunks))
+
+        logger.info(
+            f"Ingested document {document.id} with {len(chunks)} chunks in {duration:.3f}s"
+        )
 
         return document.id
 
     except Exception as e:
         await session.rollback()
+        documents_ingested_total.labels(status="error").inc()
         logger.error(f"Failed to ingest document: {e}")
         raise IngestError(
             message="Failed to ingest document",
@@ -133,6 +151,8 @@ async def ingest_batch(
     """
     if not documents:
         return []
+
+    start_time = time.time()
 
     try:
         logger.info(f"Starting batch ingestion of {len(documents)} documents")
@@ -218,16 +238,23 @@ async def ingest_batch(
         # Step 7: Commit transaction
         await session.commit()
 
+        # Record metrics
+        duration = time.time() - start_time
+        document_ingestion_duration_seconds.observe(duration)
+        documents_ingested_total.labels(status="success").inc(len(doc_objects))
+        chunks_created_total.inc(len(chunk_objects))
+
         document_ids = [doc.id for doc in doc_objects]
         logger.info(
             f"Successfully ingested {len(document_ids)} documents with "
-            f"{len(chunk_objects)} chunks total"
+            f"{len(chunk_objects)} chunks total in {duration:.3f}s"
         )
 
         return document_ids
 
     except Exception as e:
         await session.rollback()
+        documents_ingested_total.labels(status="error").inc(len(documents))
         logger.error(f"Failed to ingest batch: {e}")
         raise IngestError(
             message="Failed to ingest batch of documents",

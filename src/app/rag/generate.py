@@ -1,6 +1,7 @@
 """Response generation for RAG pipeline."""
 
 import re
+import time
 from dataclasses import dataclass
 
 from openai import AsyncOpenAI, OpenAIError
@@ -9,6 +10,11 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from src.app.core.config import settings
 from src.app.core.exceptions import GenerationError
 from src.app.core.logging import get_logger
+from src.app.core.metrics import (
+    openai_tokens_total,
+    response_generation_duration_seconds,
+    response_generations_total,
+)
 from src.app.rag.retrieve import RetrievalResult
 
 logger = get_logger(__name__)
@@ -75,11 +81,14 @@ async def generate_response(
         }
     )
 
+    start_time = time.time()
+    model = settings.openai_chat_model
+
     try:
         logger.info(f"Generating response for query: {query[:50]}...")
 
         response = await client.chat.completions.create(
-            model=settings.openai_chat_model,
+            model=model,
             messages=messages,
             temperature=0.3,
             max_tokens=1500,
@@ -114,8 +123,23 @@ async def generate_response(
             "total_tokens": response.usage.total_tokens if response.usage else 0,
         }
 
+        # Record metrics
+        duration = time.time() - start_time
+        response_generation_duration_seconds.labels(model=model).observe(duration)
+        response_generations_total.labels(model=model, status="success").inc()
+
+        # Record token usage
+        if response.usage:
+            openai_tokens_total.labels(model=model, token_type="prompt").inc(
+                response.usage.prompt_tokens
+            )
+            openai_tokens_total.labels(model=model, token_type="completion").inc(
+                response.usage.completion_tokens
+            )
+
         logger.info(
-            f"Generated response with {len(citations)} citations, {token_usage['total_tokens']} tokens"
+            f"Generated response with {len(citations)} citations, "
+            f"{token_usage['total_tokens']} tokens in {duration:.3f}s"
         )
 
         return GenerationResult(
@@ -125,13 +149,14 @@ async def generate_response(
         )
 
     except Exception as e:
+        response_generations_total.labels(model=model, status="error").inc()
         logger.error(f"Error during response generation: {e}")
         raise GenerationError(
             message="Failed to generate response",
             details={
                 "query_length": len(query),
                 "context_chunks": len(context_chunks),
-                "model": settings.openai_chat_model,
+                "model": model,
             },
             original_error=e,
         )

@@ -1,11 +1,18 @@
 """Embedding generation for RAG pipeline."""
 
+import time
+
 from openai import AsyncOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.app.core.config import settings
 from src.app.core.exceptions import EmbeddingError
 from src.app.core.logging import get_logger
+from src.app.core.metrics import (
+    embedding_batch_size,
+    embedding_generation_duration_seconds,
+    embedding_generations_total,
+)
 
 logger = get_logger(__name__)
 
@@ -27,21 +34,29 @@ async def generate_embedding(text: str) -> list[float]:
     Raises:
         EmbeddingError: If embedding generation fails after retries.
     """
+    start_time = time.time()
+    model = settings.openai_embedding_model
+
     try:
         client = AsyncOpenAI(api_key=settings.openai_api_key)
 
         response = await client.embeddings.create(
-            model=settings.openai_embedding_model,
+            model=model,
             input=text,
         )
+
+        duration = time.time() - start_time
+        embedding_generation_duration_seconds.labels(model=model).observe(duration)
+        embedding_generations_total.labels(model=model, status="success").inc()
 
         return response.data[0].embedding
 
     except Exception as e:
+        embedding_generations_total.labels(model=model, status="error").inc()
         logger.error(f"Failed to generate embedding: {e}")
         raise EmbeddingError(
             message="Failed to generate embedding",
-            details={"text_length": len(text), "model": settings.openai_embedding_model},
+            details={"text_length": len(text), "model": model},
             original_error=e,
         )
 
@@ -66,7 +81,11 @@ async def generate_embeddings_batch(texts: list[str]) -> list[list[float]]:
     if not texts:
         return []
 
+    # Record batch size
+    embedding_batch_size.observe(len(texts))
+
     client = AsyncOpenAI(api_key=settings.openai_api_key)
+    model = settings.openai_embedding_model
 
     # OpenAI API limit: 2048 texts per request
     BATCH_SIZE = 2048

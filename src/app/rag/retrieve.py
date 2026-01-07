@@ -1,5 +1,6 @@
 """Vector similarity retrieval for RAG pipeline."""
 
+import time
 from dataclasses import dataclass
 from uuid import UUID
 
@@ -9,6 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.app.core.config import settings
 from src.app.core.exceptions import DatabaseError, RetrievalError
 from src.app.core.logging import get_logger
+from src.app.core.metrics import (
+    chunks_retrieved_total,
+    retrieval_duration_seconds,
+    retrieval_queries_total,
+    retrieval_similarity_scores,
+)
 
 logger = get_logger(__name__)
 
@@ -51,6 +58,8 @@ async def retrieve_similar_chunks(
 
     logger.info(f"Retrieving similar chunks: top_k={top_k}, threshold={similarity_threshold}")
 
+    start_time = time.time()
+
     # Build SQL query using pgvector cosine distance operator (<=>)
     # Cosine distance ranges from 0 (identical) to 2 (opposite)
     # Similarity = 1 - distance (ranges from -1 to 1)
@@ -82,20 +91,29 @@ async def retrieve_similar_chunks(
 
         retrieval_results = []
         for row in rows:
-            retrieval_results.append(
-                RetrievalResult(
-                    chunk_id=row.chunk_id,
-                    document_id=row.document_id,
-                    content=row.content,
-                    similarity_score=float(row.similarity_score),
-                    metadata=row.meta or {},
-                )
+            result = RetrievalResult(
+                chunk_id=row.chunk_id,
+                document_id=row.document_id,
+                content=row.content,
+                similarity_score=float(row.similarity_score),
+                metadata=row.meta or {},
             )
+            retrieval_results.append(result)
 
-        logger.info(f"Retrieved {len(retrieval_results)} chunks")
+            # Record similarity score distribution
+            retrieval_similarity_scores.observe(result.similarity_score)
+
+        # Record metrics
+        duration = time.time() - start_time
+        retrieval_duration_seconds.observe(duration)
+        retrieval_queries_total.labels(status="success").inc()
+        chunks_retrieved_total.inc(len(retrieval_results))
+
+        logger.info(f"Retrieved {len(retrieval_results)} chunks in {duration:.3f}s")
         return retrieval_results
 
     except Exception as e:
+        retrieval_queries_total.labels(status="error").inc()
         logger.error(f"Error during retrieval: {e}")
         raise RetrievalError(
             message="Failed to retrieve similar chunks",
