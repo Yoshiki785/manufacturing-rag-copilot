@@ -7,6 +7,7 @@ from openai import AsyncOpenAI, OpenAIError
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.app.core.config import settings
+from src.app.core.exceptions import GenerationError
 from src.app.core.logging import get_logger
 from src.app.rag.retrieve import RetrievalResult
 
@@ -123,9 +124,17 @@ async def generate_response(
             token_usage=token_usage,
         )
 
-    except OpenAIError as e:
-        logger.error(f"OpenAI API error during generation: {e}")
-        raise
+    except Exception as e:
+        logger.error(f"Error during response generation: {e}")
+        raise GenerationError(
+            message="Failed to generate response",
+            details={
+                "query_length": len(query),
+                "context_chunks": len(context_chunks),
+                "model": settings.openai_chat_model,
+            },
+            original_error=e,
+        )
 
 
 def _format_context(chunks: list[RetrievalResult]) -> str:

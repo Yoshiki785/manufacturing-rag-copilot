@@ -7,6 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.app.core.config import settings
+from src.app.core.exceptions import DatabaseError, RetrievalError
 from src.app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -96,7 +97,14 @@ async def retrieve_similar_chunks(
 
     except Exception as e:
         logger.error(f"Error during retrieval: {e}")
-        raise
+        raise RetrievalError(
+            message="Failed to retrieve similar chunks",
+            details={
+                "top_k": top_k,
+                "similarity_threshold": similarity_threshold,
+            },
+            original_error=e,
+        )
 
 
 async def retrieve_with_reranking(

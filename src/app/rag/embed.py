@@ -4,6 +4,7 @@ from openai import AsyncOpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.app.core.config import settings
+from src.app.core.exceptions import EmbeddingError
 from src.app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -24,16 +25,25 @@ async def generate_embedding(text: str) -> list[float]:
         List of floats representing the embedding vector.
 
     Raises:
-        OpenAIError: If embedding generation fails after retries.
+        EmbeddingError: If embedding generation fails after retries.
     """
-    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    try:
+        client = AsyncOpenAI(api_key=settings.openai_api_key)
 
-    response = await client.embeddings.create(
-        model=settings.openai_embedding_model,
-        input=text,
-    )
+        response = await client.embeddings.create(
+            model=settings.openai_embedding_model,
+            input=text,
+        )
 
-    return response.data[0].embedding
+        return response.data[0].embedding
+
+    except Exception as e:
+        logger.error(f"Failed to generate embedding: {e}")
+        raise EmbeddingError(
+            message="Failed to generate embedding",
+            details={"text_length": len(text), "model": settings.openai_embedding_model},
+            original_error=e,
+        )
 
 
 async def generate_embeddings_batch(texts: list[str]) -> list[list[float]]:
@@ -90,7 +100,15 @@ async def generate_embeddings_batch(texts: list[str]) -> list[list[float]]:
 
         except Exception as e:
             logger.error(f"Error processing batch {batch_idx + 1}: {e}")
-            raise
+            raise EmbeddingError(
+                message=f"Failed to process batch {batch_idx + 1}",
+                details={
+                    "batch_index": batch_idx,
+                    "batch_size": len(batch),
+                    "model": settings.openai_embedding_model,
+                },
+                original_error=e,
+            )
 
     # Process all batches in parallel
     batch_results = await asyncio.gather(
