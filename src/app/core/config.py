@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     api_key_enabled: bool = True
     api_keys: list[str] = []
 
+    # Rate Limiting
+    rate_limit_enabled: bool = True
+    rate_limit_default: str = "100/minute"
+    rate_limit_query: str = "30/minute"
+    rate_limit_ingest: str = "10/minute"
+    rate_limit_threads: str = "60/minute"
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -8,6 +8,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from src.app.core.config import settings
+from src.app.core.rate_limit import limiter
 from src.app.core.security import verify_api_key
 from src.app.db.models import Message, Thread
 from src.app.db.session import get_session
@@ -43,33 +45,34 @@ class IngestRequest(BaseModel):
 
 
 @router.post("/query", response_model=QueryResponse)
+@limiter.limit(settings.rate_limit_query)
 async def query_rag(
-    request: QueryRequest,
-    http_request: Request,
+    payload: QueryRequest,
+    request: Request,
     session: AsyncSession = Depends(get_session),
     api_key: str = Depends(verify_api_key),
 ) -> QueryResponse:
     """Query the RAG system with a question."""
     # Generate embedding for the query
-    query_embedding = await generate_embedding(request.query)
+    query_embedding = await generate_embedding(payload.query)
 
     # Retrieve similar chunks
     context_chunks = await retrieve_similar_chunks(
         session=session,
         query_embedding=query_embedding,
-        top_k=request.top_k,
+        top_k=payload.top_k,
     )
 
     # Generate response using LLM
     generation_result = await generate_response(
-        query=request.query,
+        query=payload.query,
         context_chunks=context_chunks,
     )
 
     # Handle thread management
-    if request.thread_id:
+    if payload.thread_id:
         # Existing thread
-        thread_uuid = UUID(request.thread_id)
+        thread_uuid = UUID(payload.thread_id)
         stmt = select(Thread).where(Thread.id == thread_uuid)
         result = await session.execute(stmt)
         thread = result.scalar_one_or_none()
@@ -79,7 +82,7 @@ async def query_rag(
         # Create new thread
         thread = Thread(
             id=uuid4(),
-            title=request.query[:100],
+            title=payload.query[:100],
         )
         session.add(thread)
 
@@ -88,7 +91,7 @@ async def query_rag(
         id=uuid4(),
         thread_id=thread.id,
         role="user",
-        content=request.query,
+        content=payload.query,
     )
     session.add(user_message)
 
@@ -113,24 +116,26 @@ async def query_rag(
 
 
 @router.post("/ingest")
+@limiter.limit(settings.rate_limit_ingest)
 async def ingest_document(
-    request: IngestRequest,
-    http_request: Request,
+    payload: IngestRequest,
+    request: Request,
     session: AsyncSession = Depends(get_session),
     api_key: str = Depends(verify_api_key),
 ) -> dict[str, str]:
     """Ingest a document into the RAG system."""
     document_id = await ingest_doc(
         session=session,
-        content=request.content,
-        metadata=request.metadata,
+        content=payload.content,
+        metadata=payload.metadata,
     )
     return {"document_id": str(document_id)}
 
 
 @router.get("/threads")
+@limiter.limit(settings.rate_limit_threads)
 async def list_threads(
-    http_request: Request,
+    request: Request,
     session: AsyncSession = Depends(get_session),
     api_key: str = Depends(verify_api_key),
 ) -> list[dict]:
@@ -153,9 +158,10 @@ async def list_threads(
 
 
 @router.get("/threads/{thread_id}")
+@limiter.limit(settings.rate_limit_threads)
 async def get_thread(
     thread_id: str,
-    http_request: Request,
+    request: Request,
     session: AsyncSession = Depends(get_session),
     api_key: str = Depends(verify_api_key),
 ) -> dict:

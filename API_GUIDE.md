@@ -261,6 +261,17 @@ SIMILARITY_THRESHOLD=0.3
 # Application
 LOG_LEVEL=INFO
 ENVIRONMENT=development
+
+# Security
+API_KEY_ENABLED=true
+API_KEYS=["your-api-key-1","your-api-key-2"]
+
+# Rate Limiting
+RATE_LIMIT_ENABLED=true
+RATE_LIMIT_DEFAULT=100/minute
+RATE_LIMIT_QUERY=30/minute
+RATE_LIMIT_INGEST=10/minute
+RATE_LIMIT_THREADS=60/minute
 ```
 
 ### Database Configuration
@@ -285,7 +296,8 @@ ENVIRONMENT=development
 
 ## 🔐 Authentication
 
-現在、認証は実装されていません（開発環境）。
+APIキー認証とレート制限はデフォルトで有効です。
+無効化する場合は `.env` の `API_KEY_ENABLED` / `RATE_LIMIT_ENABLED` を調整してください。
 
 本番環境では以下を推奨:
 - API Key authentication
