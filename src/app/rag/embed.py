@@ -49,10 +49,58 @@ async def generate_embeddings_batch(texts: list[str]) -> list[list[float]]:
     Note:
         OpenAI supports batching up to 2048 texts per request.
         This function handles larger batches by splitting them.
+        Uses parallel processing for multiple batches.
     """
-    # TODO: Implement batched embedding generation
-    # - Respect API rate limits
-    # - Handle batch size limits
-    # - Implement parallel processing for large batches
+    import asyncio
 
-    raise NotImplementedError("Batch embedding not yet implemented")
+    if not texts:
+        return []
+
+    client = AsyncOpenAI(api_key=settings.openai_api_key)
+
+    # OpenAI API limit: 2048 texts per request
+    BATCH_SIZE = 2048
+    batches = []
+
+    # Split texts into batches
+    for i in range(0, len(texts), BATCH_SIZE):
+        batch = texts[i : i + BATCH_SIZE]
+        batches.append(batch)
+
+    logger.info(
+        f"Generating embeddings for {len(texts)} texts in {len(batches)} batch(es)"
+    )
+
+    async def process_batch(batch: list[str], batch_idx: int) -> list[list[float]]:
+        """Process a single batch of texts."""
+        try:
+            # Add delay between batches to respect rate limits
+            if batch_idx > 0:
+                await asyncio.sleep(1)  # 1 second delay between batches
+
+            response = await client.embeddings.create(
+                model=settings.openai_embedding_model,
+                input=batch,
+            )
+
+            # Extract embeddings in the same order as input
+            embeddings = [item.embedding for item in response.data]
+            logger.info(f"Batch {batch_idx + 1}/{len(batches)}: Generated {len(embeddings)} embeddings")
+            return embeddings
+
+        except Exception as e:
+            logger.error(f"Error processing batch {batch_idx + 1}: {e}")
+            raise
+
+    # Process all batches in parallel
+    batch_results = await asyncio.gather(
+        *[process_batch(batch, idx) for idx, batch in enumerate(batches)]
+    )
+
+    # Flatten results while maintaining order
+    all_embeddings = []
+    for batch_result in batch_results:
+        all_embeddings.extend(batch_result)
+
+    logger.info(f"Successfully generated {len(all_embeddings)} embeddings")
+    return all_embeddings
