@@ -68,11 +68,17 @@ async def session(test_session_maker) -> AsyncGenerator[AsyncSession, None]:
 @pytest.fixture(scope="function")
 async def client(session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     """Create a test HTTP client with overridden dependencies."""
+    from src.app.core.security import verify_api_key
 
     async def override_get_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
+    async def override_verify_api_key() -> str:
+        """Bypass API key verification in tests."""
+        return "test-api-key"
+
     app.dependency_overrides[get_session] = override_get_session
+    app.dependency_overrides[verify_api_key] = override_verify_api_key
 
     async with AsyncClient(
         transport=ASGITransport(app=app),

@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     environment: str = "development"
 
+    # Security Settings
+    api_key_enabled: bool = True
+    api_keys: list[str] = []
+
 
 @lru_cache
 def get_settings() -> Settings:

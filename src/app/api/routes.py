@@ -2,12 +2,13 @@
 
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from src.app.core.security import verify_api_key
 from src.app.db.models import Message, Thread
 from src.app.db.session import get_session
 from src.app.rag.embed import generate_embedding
@@ -44,7 +45,9 @@ class IngestRequest(BaseModel):
 @router.post("/query", response_model=QueryResponse)
 async def query_rag(
     request: QueryRequest,
+    http_request: Request,
     session: AsyncSession = Depends(get_session),
+    api_key: str = Depends(verify_api_key),
 ) -> QueryResponse:
     """Query the RAG system with a question."""
     # Generate embedding for the query
@@ -112,7 +115,9 @@ async def query_rag(
 @router.post("/ingest")
 async def ingest_document(
     request: IngestRequest,
+    http_request: Request,
     session: AsyncSession = Depends(get_session),
+    api_key: str = Depends(verify_api_key),
 ) -> dict[str, str]:
     """Ingest a document into the RAG system."""
     document_id = await ingest_doc(
@@ -125,7 +130,9 @@ async def ingest_document(
 
 @router.get("/threads")
 async def list_threads(
+    http_request: Request,
     session: AsyncSession = Depends(get_session),
+    api_key: str = Depends(verify_api_key),
 ) -> list[dict]:
     """List conversation threads."""
     stmt = select(Thread).order_by(Thread.created_at.desc()).limit(100)
@@ -148,7 +155,9 @@ async def list_threads(
 @router.get("/threads/{thread_id}")
 async def get_thread(
     thread_id: str,
+    http_request: Request,
     session: AsyncSession = Depends(get_session),
+    api_key: str = Depends(verify_api_key),
 ) -> dict:
     """Get a specific conversation thread."""
     thread_uuid = UUID(thread_id)
