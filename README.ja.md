@@ -18,8 +18,13 @@
 
 ## アーキテクチャ（Architecture）
 
-クライアント → FastAPI（API層） → RAGパイプライン（埋め込み・検索・生成）  
+クライアント → FastAPI（API層） → RAGパイプライン（埋め込み・検索・生成）
 データは PostgreSQL + pgvector に保存されます。詳細は docs/architecture.ja.md を参照してください。
+
+## ドキュメント（Documentation）
+
+- [ユーザーガイド](docs/USER_GUIDE.md) - システムの使い方についての総合ガイド
+- [技術選定理由書](docs/TECHNICAL_DECISIONS.md) - 技術選定の理由とアーキテクチャ判断
 
 ## クイックスタート（Quickstart）
 

@@ -31,6 +31,11 @@ Manufacturing teams need quick, accurate access to technical documentation, proc
 
 See [docs/architecture.md](docs/architecture.md) for detailed design.
 
+## Documentation
+
+- [User Guide](docs/USER_GUIDE.md) - Comprehensive guide for using the system
+- [Technical Decisions](docs/TECHNICAL_DECISIONS.md) - Technical rationale and architecture decisions
+
 ## Quickstart
 
 ```bash
